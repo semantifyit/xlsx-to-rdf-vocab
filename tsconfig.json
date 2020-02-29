@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "declaration": true,
+    "lib": ["es2019", "dom"],
+    "sourceMap": true,
+    "module": "CommonJS",
+    "target": "es5",
+    "moduleResolution": "Node"
+  },
+  "include": ["src/**/*.ts"]
+}

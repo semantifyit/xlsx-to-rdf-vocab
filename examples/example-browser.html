@@ -1,0 +1,33 @@
+<html>
+  <body>
+    Hello World
+    <input type="file" id="input" />
+  </body>
+  <script src="../dist/bundle.js"></script>
+
+  <script>
+    console.log(xlsxToRdfVocab);
+
+    (async () => {
+      /*       const vocab = await xlsxToRdfVocab.fromGoogleSheets(
+        'https://docs.google.com/spreadsheets/d/1anSwqUony4cnsDFT0BUNUkZnTiDtDOO3I7XmmF4vXyo/edit?usp=sharing',
+      ); */
+      // google sheets doesn't allow CORS requests
+
+      document.getElementById('input').addEventListener('change', handleFiles, false);
+      function handleFiles(e) {
+        const fileList = this.files;
+        const files = e.target.files,
+          f = files[0];
+
+        console.log(e.target.files[0]);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const vocab = xlsxToRdfVocab.fromArrayBuffer(e.target.result);
+          console.log(JSON.stringify(vocab, null, 2));
+        };
+        reader.readAsArrayBuffer(f);
+      }
+    })();
+  </script>
+</html>
