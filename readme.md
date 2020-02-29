@@ -18,7 +18,7 @@ Currently not on npm-repository, in future
 
 With github: (needs `git` installed)
 
-`npm i git+https://github.com/semantifyit/XlsxToRdfVocab`
+`npm i git+https://github.com/semantifyit/xlsx-to-rdf-vocab`
 
 Then simply require with
 
@@ -29,7 +29,7 @@ const xlsxToRdfVocab = require('xlsxToRdfVocab');
 ### browser + CDN
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/semantifyit/XlsxToRdfVocab/dist/bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/semantifyit/xlsx-to-rdf-vocab/dist/bundle.js"></script>
 ```
 
 ## Examples / Sheet Template
