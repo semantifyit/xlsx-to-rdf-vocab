@@ -141,7 +141,7 @@ const workbookToVocab = (wb: XLSX.WorkBook, userConfig: OptConfig = {}) => {
   config.sheets = { ...defaultConfig.sheets, ...userConfig.sheets };
 
   const prefixSheet = XLSX.utils.sheet_to_json(wb.Sheets[config.sheets.prefix]);
-  const setPrefix = Object.fromEntries(prefixSheet.filter(isPrefixRow).map((row) => [row.prefix, row.url]));
+  const setPrefix = fromEntries(prefixSheet.filter(isPrefixRow).map((row) => [row.prefix, row.url]));
   const prefix = { ...defaultPrefix, ...setPrefix };
 
   const classSheet = XLSX.utils.sheet_to_json(wb.Sheets[config.sheets.classes]);
