@@ -71,7 +71,7 @@ var defaultConfig = {
     },
 };
 exports.fromGoogleSheets = function (url, config) {
-    var sheetId = url.match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9]+)/)[1];
+    var sheetId = url.match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)[1];
     return exports.fromUrl("https://docs.google.com/spreadsheets/d/" + sheetId + "/export?format=xlsx", config);
 };
 exports.fromUrl = function (url, config) { return __awaiter(void 0, void 0, void 0, function () {

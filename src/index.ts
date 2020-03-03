@@ -31,7 +31,7 @@ const defaultConfig = {
 };
 
 export const fromGoogleSheets = (url: string, config?: OptConfig) => {
-  const sheetId = url.match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9]+)/)[1];
+  const sheetId = url.match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)[1];
   return fromUrl(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`, config);
 };
 
