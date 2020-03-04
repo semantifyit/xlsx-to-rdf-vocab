@@ -60,21 +60,13 @@ var defaultPrefix = {
     rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
     rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
     schema: 'http://schema.org/',
+    xsd: 'http://www.w3.org/2001/XMLSchema#',
 };
-var defaultConfig = {
-    exportType: 'jsonld',
-    sheets: {
-        prefix: 'Prefix',
-        classes: 'Class',
-        properties: 'Property',
-        enumMembers: 'EnumMember',
-    },
-};
-exports.fromGoogleSheets = function (url, config) {
+exports.fromGoogleSheets = function (url) {
     var sheetId = url.match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)[1];
-    return exports.fromUrl("https://docs.google.com/spreadsheets/d/" + sheetId + "/export?format=xlsx", config);
+    return exports.fromUrl("https://docs.google.com/spreadsheets/d/" + sheetId + "/export?format=xlsx");
 };
-exports.fromUrl = function (url, config) { return __awaiter(void 0, void 0, void 0, function () {
+exports.fromUrl = function (url) { return __awaiter(void 0, void 0, void 0, function () {
     var resp, xlsxBuffer, workbook;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -85,21 +77,21 @@ exports.fromUrl = function (url, config) { return __awaiter(void 0, void 0, void
             case 2:
                 xlsxBuffer = _a.sent();
                 workbook = XLSX.read(new Uint8Array(xlsxBuffer), { type: 'array' });
-                return [2 /*return*/, workbookToVocab(workbook, config)];
+                return [2 /*return*/, workbookToVocab(workbook)];
         }
     });
 }); };
-exports.fromFile = function (filename, config) {
+exports.fromFile = function (filename) {
     var wb = XLSX.readFile(filename);
-    return workbookToVocab(wb, config);
+    return workbookToVocab(wb);
 };
-exports.fromArrayBuffer = function (buffer, config) {
+exports.fromArrayBuffer = function (buffer) {
     var wb = XLSX.read(new Uint8Array(buffer), { type: 'array' });
-    return workbookToVocab(wb, config);
+    return workbookToVocab(wb);
 };
-exports.fromUint8Array = function (arr, config) {
+exports.fromUint8Array = function (arr) {
     var wb = XLSX.read(arr, { type: 'array' });
-    return workbookToVocab(wb, config);
+    return workbookToVocab(wb);
 };
 var isPrefixRow = function (row) { return row['prefix'] && row['url']; };
 var idWrap = function (str) { return ({ '@id': str }); };
@@ -107,6 +99,10 @@ var idWraps = function (str) { return (Array.isArray(str) ? str.map(idWrap) : id
 var langWrap = function (str, lang) { return ({
     '@value': str,
     '@language': lang,
+}); };
+var dataTypeWrap = function (str, dt) { return ({
+    '@value': str,
+    '@type': dt,
 }); };
 var fromArray = function (arr) { return (arr.length > 1 ? arr : arr[0]); };
 var trim = function (str) { return str.trim(); };
@@ -127,39 +123,38 @@ var fromEntries = function (entries) {
     }
     return obj;
 };
-var idRows = ['name', 'rdfs:Class', 'rdf:Property'];
-var splitCellRows = ['rdf:type'];
-var splitCellidWrapRows = [
-    'rdfs:subClassOf',
-    'schema:domainIncludes',
-    'schema:rangeIncludes',
-    'rdfs:subPropertyOf',
-];
-var strLangRows = ['rdfs:label', 'rdfs:comment'];
-var cellToEntry = function (_a) {
-    var prop = _a[0], val = _a[1];
-    var cleanProp = prop.trim();
-    if (idRows.includes(cleanProp)) {
-        return ['@id', val];
-    }
-    if (splitCellRows.includes(cleanProp)) {
-        return ['@type', splitCell(val)];
-    }
-    if (splitCellidWrapRows.includes(cleanProp)) {
-        return [cleanProp, idWraps(splitCell(val))];
-    }
-    if (strLangRows.some(function (pRowName) { return cleanProp.startsWith(pRowName); })) {
-        var propName = cleanProp.split('@')[0].trim();
-        if (cleanProp.includes('@')) {
-            var lang = cleanProp
-                .split('@')
-                .pop()
-                .trim();
-            return [propName, langWrap(val, lang)];
-        }
-        return [propName, val];
-    }
+var map = function (val, f) {
+    return Array.isArray(val) ? val.map(f) : f(val);
 };
+var uriRegex = new RegExp(/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi);
+var isUri = function (uri, prefixes) {
+    return prefixes.some(function (prefix) { return uri.startsWith(prefix + ':'); }) || uri.match(uriRegex);
+};
+var useDefPrefix = function (prefixes, defaultPrefix) { return function (uri) {
+    return defaultPrefix && !isUri(uri, prefixes) ? defaultPrefix + ":" + uri : uri;
+}; };
+var cellToEntryWithPref = function (prefixes, defaultPrefix) { return function (_a) {
+    var prop = _a[0], val = _a[1];
+    prop = prop.trim();
+    val = val.trim();
+    var usePrefix = useDefPrefix(prefixes, defaultPrefix);
+    if (prop.toLowerCase() === 'uri') {
+        return ['@id', usePrefix(val)];
+    }
+    if (prop === 'rdf:type' || prop === '@type') {
+        return ['@type', map(splitCell(val), usePrefix)];
+    }
+    if (prop.includes('@')) {
+        var _b = prop.split('@').map(function (s) { return s.trim(); }), propName = _b[0], lang = _b[1];
+        return [propName, langWrap(val, lang)];
+    }
+    if (prop.includes('^^')) {
+        var _c = prop.split('^^').map(function (s) { return s.trim(); }), propName = _c[0], dt = _c[1];
+        return [propName, dataTypeWrap(val, dt)];
+    }
+    // base id array
+    return [prop, idWraps(map(splitCell(val), usePrefix))];
+}; };
 var newOfType = function (classSheet, func) {
     return classSheet.map(function (row) {
         return fromEntries(Object.entries(row)
@@ -167,22 +162,46 @@ var newOfType = function (classSheet, func) {
             .filter(function (entry) { return entry && entry[0]; }));
     });
 };
-var workbookToVocab = function (wb, userConfig) {
-    if (userConfig === void 0) { userConfig = {}; }
-    var config = __assign(__assign({}, defaultConfig), userConfig);
-    config.sheets = __assign(__assign({}, defaultConfig.sheets), userConfig.sheets);
-    var prefixSheet = XLSX.utils.sheet_to_json(wb.Sheets[config.sheets.prefix]);
-    var setPrefix = fromEntries(prefixSheet.filter(isPrefixRow).map(function (row) { return [row.prefix, row.url]; }));
+var lCaseCompare = function (a, b) { return a.toLowerCase() === b.toLowerCase(); };
+var getValueFrom = function (obj, keys) { var _a; return (_a = Object.entries(obj).find(function (_a) {
+    var k = _a[0], v = _a[1];
+    return keys.some(function (key) { return lCaseCompare(k, key); });
+})) === null || _a === void 0 ? void 0 : _a[1]; };
+var getAllButValueFrom = function (obj, keys) {
+    return Object.entries(obj)
+        .filter(function (_a) {
+        var k = _a[0], v = _a[1];
+        return !keys.some(function (key) { return lCaseCompare(k, key); });
+    })
+        .map(function (_a) {
+        var k = _a[0], v = _a[1];
+        return v;
+    });
+};
+var workbookToVocab = function (wb) {
+    var _a;
+    if (Object.keys(wb.Sheets).length === 0) {
+        throw new Error('No sheets found');
+    }
+    var prefixSheet = XLSX.utils.sheet_to_json(getValueFrom(wb.Sheets, ['prefix', 'prefixes']));
+    var prefixRows = prefixSheet.filter(isPrefixRow);
+    var setPrefix = fromEntries(prefixRows.map(function (row) { return [row.prefix, row.url]; }));
     var prefix = __assign(__assign({}, defaultPrefix), setPrefix);
-    var classSheet = XLSX.utils.sheet_to_json(wb.Sheets[config.sheets.classes]);
-    var propertySheet = XLSX.utils.sheet_to_json(wb.Sheets[config.sheets.properties]);
-    var enumerationMemberSheet = XLSX.utils.sheet_to_json(wb.Sheets[config.sheets.enumMembers]);
+    var prefixBase = (_a = prefixRows.find(function (row) { return row['base']; })) === null || _a === void 0 ? void 0 : _a.prefix;
+    var cellToEntry = cellToEntryWithPref(Object.keys(prefix), prefixBase);
+    var classSheet = XLSX.utils.sheet_to_json(getValueFrom(wb.Sheets, ['classes', 'class']));
+    var propertySheet = XLSX.utils.sheet_to_json(getValueFrom(wb.Sheets, ['properties', 'property']));
     var newClasses = newOfType(classSheet, cellToEntry).map(function (c) { return ((c['@type'] = 'rdfs:Class'), c); });
     var newProperties = newOfType(propertySheet, cellToEntry).map(function (p) { return ((p['@type'] = 'rdf:Property'), p); });
-    var newEnumerationMembers = newOfType(enumerationMemberSheet, cellToEntry);
+    var restSheets = getAllButValueFrom(wb.Sheets, ['prefixes', 'classes', 'properties', 'prefix', 'class', 'property']);
+    var members = restSheets.flatMap(function (sheet) {
+        var jsonSheet = XLSX.utils.sheet_to_json(sheet);
+        var newEnumerationMembers = newOfType(jsonSheet, cellToEntry);
+        return newEnumerationMembers;
+    });
     var vocab = {
         '@context': prefix,
-        '@graph': __spreadArrays(newClasses, newProperties, newEnumerationMembers),
+        '@graph': __spreadArrays(newClasses, newProperties, members),
     };
     return vocab;
 };
