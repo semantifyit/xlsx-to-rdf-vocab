@@ -78,7 +78,7 @@ const fromEntries = (entries: any[][]) => {
   return obj;
 };
 
-const map = <T, U>(val: OptArray<T>, f: (v:T)=>U): OptArray<U> => 
+const map = <T, U>(val: OptArray<T>, f: (v: T) => U): OptArray<U> =>
   Array.isArray(val) ? val.map(f) : f(val);
 
 const uriRegex = new RegExp(
@@ -96,7 +96,7 @@ const cellToEntryWithPref = (prefixes: string[], defaultPrefix?: string) => ([pr
 ]) => {
   prop = prop.trim();
   val = val.trim();
-  const usePrefix = useDefPrefix(prefixes, defaultPrefix)
+  const usePrefix = useDefPrefix(prefixes, defaultPrefix);
   if (prop.toLowerCase() === 'uri') {
     return ['@id', usePrefix(val)];
   }
@@ -134,6 +134,8 @@ const getAllButValueFrom = (obj, keys: string[]) =>
     .filter(([k, v]) => !keys.some((key) => lCaseCompare(k, key)))
     .map(([k, v]) => v);
 
+const flat = <T>(arr: T[][]): T[] => Array.prototype.concat.apply([], arr);
+
 const workbookToVocab = (wb: XLSX.WorkBook) => {
   if (Object.keys(wb.Sheets).length === 0) {
     throw new Error('No sheets found');
@@ -155,13 +157,22 @@ const workbookToVocab = (wb: XLSX.WorkBook) => {
   const newClasses = newOfType(classSheet, cellToEntry).map((c) => ((c['@type'] = 'rdfs:Class'), c));
   const newProperties = newOfType(propertySheet, cellToEntry).map((p) => ((p['@type'] = 'rdf:Property'), p));
 
-  const restSheets = getAllButValueFrom(wb.Sheets, ['prefixes', 'classes', 'properties', 'prefix', 'class', 'property']);
+  const restSheets = getAllButValueFrom(wb.Sheets, [
+    'prefixes',
+    'classes',
+    'properties',
+    'prefix',
+    'class',
+    'property',
+  ]);
 
-  const members = restSheets.flatMap((sheet) => {
-    const jsonSheet = XLSX.utils.sheet_to_json(sheet);
-    const newEnumerationMembers = newOfType(jsonSheet, cellToEntry);
-    return newEnumerationMembers;
-  });
+  const members = flat(
+    restSheets.map((sheet) => {
+      const jsonSheet = XLSX.utils.sheet_to_json(sheet);
+      const newEnumerationMembers = newOfType(jsonSheet, cellToEntry);
+      return newEnumerationMembers;
+    }),
+  );
 
   const vocab = {
     '@context': prefix,

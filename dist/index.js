@@ -178,6 +178,7 @@ var getAllButValueFrom = function (obj, keys) {
         return v;
     });
 };
+var flat = function (arr) { return Array.prototype.concat.apply([], arr); };
 var workbookToVocab = function (wb) {
     var _a;
     if (Object.keys(wb.Sheets).length === 0) {
@@ -193,12 +194,19 @@ var workbookToVocab = function (wb) {
     var propertySheet = XLSX.utils.sheet_to_json(getValueFrom(wb.Sheets, ['properties', 'property']));
     var newClasses = newOfType(classSheet, cellToEntry).map(function (c) { return ((c['@type'] = 'rdfs:Class'), c); });
     var newProperties = newOfType(propertySheet, cellToEntry).map(function (p) { return ((p['@type'] = 'rdf:Property'), p); });
-    var restSheets = getAllButValueFrom(wb.Sheets, ['prefixes', 'classes', 'properties', 'prefix', 'class', 'property']);
-    var members = restSheets.flatMap(function (sheet) {
+    var restSheets = getAllButValueFrom(wb.Sheets, [
+        'prefixes',
+        'classes',
+        'properties',
+        'prefix',
+        'class',
+        'property',
+    ]);
+    var members = flat(restSheets.map(function (sheet) {
         var jsonSheet = XLSX.utils.sheet_to_json(sheet);
         var newEnumerationMembers = newOfType(jsonSheet, cellToEntry);
         return newEnumerationMembers;
-    });
+    }));
     var vocab = {
         '@context': prefix,
         '@graph': __spreadArrays(newClasses, newProperties, members),

@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "converts xlsx/google sheets to rdf vocabularies",
     "main": "dist/index.js",
+    "bin": "dist/cli.js",
     "browser": "dist/bundle.js",
     "types": "dist/index.d.ts",
     "files": [
