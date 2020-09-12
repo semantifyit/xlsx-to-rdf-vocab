@@ -34,7 +34,7 @@
         "webpack-cli": "^3.3.11"
     },
     "dependencies": {
-        "node-fetch": "^2.6.0",
+        "node-fetch": "^2.6.1",
         "xlsx": "^0.15.5"
     },
     "prettier": {
