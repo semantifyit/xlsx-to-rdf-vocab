@@ -35,7 +35,7 @@
     },
     "dependencies": {
         "node-fetch": "^2.6.0",
-        "xlsx": "^0.15.5"
+        "xlsx": "^0.17.0"
     },
     "prettier": {
         "singleQuote": true,
